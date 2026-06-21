@@ -1,0 +1,3 @@
+app.py:172:72: W292 no newline at end of file
+logic_utils.py:159:25: W292 no newline at end of file
+tests/test_game_logic.py:89:51: W292 no newline at end of file

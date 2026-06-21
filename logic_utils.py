@@ -1,5 +1,13 @@
 def get_range_for_difficulty(difficulty: str):
-    """Return (low, high) inclusive range for a given difficulty."""
+    """
+    Return the inclusive number range for a selected difficulty.
+
+    Args:
+        difficulty: The difficulty label selected in the Streamlit sidebar.
+
+    Returns:
+        A tuple containing the lowest and highest valid guesses.
+    """
     if difficulty == "Easy":
         return 1, 20
     if difficulty == "Normal":
@@ -11,14 +19,17 @@ def get_range_for_difficulty(difficulty: str):
 
 def parse_guess(raw: str):
     """
-    Parse user input into an int guess.
+    Convert raw user input into an integer guess.
 
-    Returns: (ok: bool, guess_int: int | None, error_message: str | None)
+    Args:
+        raw: Text entered by the user in the guess input field.
+
+    Returns:
+        A tuple of (ok, guess_int, error_message). If parsing succeeds,
+        ok is True, guess_int contains the parsed integer, and error_message
+        is None. If parsing fails, ok is False and error_message explains why.
     """
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
+    if raw is None or raw.strip() == "":
         return False, None, "Enter a guess."
 
     try:
@@ -32,48 +43,105 @@ def parse_guess(raw: str):
     return True, value, None
 
 
+def is_guess_in_range(guess: int, low: int, high: int):
+    """
+    Check whether a guess is inside the active difficulty range.
+
+    Args:
+        guess: The parsed integer guess.
+        low: The lowest allowed value.
+        high: The highest allowed value.
+
+    Returns:
+        True if the guess is inside the range, otherwise False.
+    """
+    return low <= guess <= high
+
+
 def check_guess(guess, secret):
     """
-    Compare guess to secret and return (outcome, message).
+    Compare a guess against the secret number.
 
-    outcome examples: "Win", "Too High", "Too Low"
+    Args:
+        guess: The user's guess.
+        secret: The secret number.
+
+    Returns:
+        "Win" when the guess matches the secret, "Too High" when the guess
+        is above the secret, and "Too Low" when the guess is below the secret.
     """
-    # Try numeric comparison first
     try:
-        g = int(guess)
-        s = int(secret)
+        guess_value = int(guess)
+        secret_value = int(secret)
     except Exception:
-        # Fallback to string comparison if numeric conversion fails
-        g = str(guess)
-        s = str(secret)
+        guess_value = str(guess)
+        secret_value = str(secret)
 
-    if g == s:
+    if guess_value == secret_value:
         return "Win"
 
-    try:
-        if g > s:
-            return "Too High"
-        return "Too Low"
-    except TypeError:
-        # If still incomparable, compare lexicographically
-        if g > s:
-            return "Too High"
-        return "Too Low"
+    if guess_value > secret_value:
+        return "Too High"
+
+    return "Too Low"
 
 
 def hint_for_outcome(outcome: str):
-    """Return a user-facing hint message for an outcome."""
+    """
+    Return a player-facing hint message for a guess outcome.
+
+    Args:
+        outcome: The result returned by check_guess.
+
+    Returns:
+        A short hint message shown in the Streamlit app.
+    """
     if outcome == "Win":
         return "🎉 Correct!"
     if outcome == "Too High":
-        return "📉 Go LOWER!"
+        return "📉 Too high! Go LOWER."
     if outcome == "Too Low":
-        return "📈 Go HIGHER!"
+        return "📈 Too low! Go HIGHER."
     return ""
 
 
+def get_distance_label(guess: int, secret: int):
+    """
+    Return a hot/cold style hint based on distance from the secret number.
+
+    Args:
+        guess: The user's valid guess.
+        secret: The secret number.
+
+    Returns:
+        A short label describing how close the guess is.
+    """
+    distance = abs(guess - secret)
+
+    if distance == 0:
+        return "🎯 Exact"
+    if distance <= 3:
+        return "🔥 Very close"
+    if distance <= 10:
+        return "🌡️ Warm"
+    if distance <= 25:
+        return "🧊 Cold"
+
+    return "🥶 Very cold"
+
+
 def update_score(current_score: int, outcome: str, attempt_number: int):
-    """Update score based on outcome and attempt number."""
+    """
+    Update the player's score after a valid guess.
+
+    Args:
+        current_score: The score before the current guess.
+        outcome: The result returned by check_guess.
+        attempt_number: The current valid attempt count.
+
+    Returns:
+        The updated score.
+    """
     if outcome == "Win":
         points = 100 - 10 * (attempt_number + 1)
         if points < 10:
